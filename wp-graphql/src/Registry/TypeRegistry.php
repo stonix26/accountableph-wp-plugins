@@ -46,6 +46,8 @@ use WPGraphQL\Mutation\UserRegister;
 use WPGraphQL\Mutation\UserUpdate;
 use WPGraphQL\Type\Enum\ContentNodeIdTypeEnum;
 use WPGraphQL\Type\Enum\ContentTypeIdTypeEnum;
+use WPGraphQL\Type\Enum\MenuItemNodeIdTypeEnum;
+use WPGraphQL\Type\Enum\MenuNodeIdTypeEnum;
 use WPGraphQL\Type\Enum\TaxonomyIdTypeEnum;
 use WPGraphQL\Type\Enum\TermNodeIdTypeEnum;
 use WPGraphQL\Type\Enum\UserNodeIdTypeEnum;
@@ -267,6 +269,8 @@ class TypeRegistry {
 		MediaItemSizeEnum::register_type();
 		MediaItemStatusEnum::register_type();
 		MenuLocationEnum::register_type();
+		MenuItemNodeIdTypeEnum::register_type();
+		MenuNodeIdTypeEnum::register_type();
 		MimeTypeEnum::register_type();
 		OrderEnum::register_type();
 		PostObjectFieldFormatEnum::register_type();
@@ -385,6 +389,21 @@ class TypeRegistry {
 		$allowed_setting_types = DataSource::get_allowed_settings_by_group();
 
 		if ( ! empty( $allowed_setting_types ) && is_array( $allowed_setting_types ) ) {
+
+			/**
+			 * The url is not a registered setting for multisite, so this is a polyfill
+			 * to expose the URL to the Schema for multisite sites
+			 */
+			if ( is_multisite() ) {
+				register_graphql_field( 'GeneralSettings', 'url', [
+					'type'        => 'String',
+					'description' => __( 'Site URL.', 'wp-graphql' ),
+					'resolve'     => function() {
+						return get_site_url();
+					},
+				] );
+			}
+
 			foreach ( $allowed_setting_types as $group => $setting_type ) {
 
 				$group_name = lcfirst( preg_replace( '[^a-zA-Z0-9 -]', '_', $group ) );
